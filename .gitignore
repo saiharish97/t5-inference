@@ -1,0 +1,65 @@
+# Build directories
+build/
+out/
+
+# Model and tokenizer files
+*.pb
+*.index
+*.data-*
+*.meta
+saved_model/
+*.model
+variables/
+assets/
+*.tflite
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+*.cmake
+Makefile
+compile_commands.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# OS specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
