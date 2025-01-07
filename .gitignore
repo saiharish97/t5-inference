@@ -2,7 +2,7 @@
 build/
 out/
 
-# Model and tokenizer files
+# Model and tokenizer files - ignore by default
 *.pb
 *.index
 *.data-*
@@ -12,6 +12,15 @@ saved_model/
 variables/
 assets/
 *.tflite
+
+# Explicitly include our model files and directories
+!models/spiece.model
+!models/tf_model_gen/saved_model.pb
+!models/tf_model_gen/fingerprint.pb
+!models/tf_model_gen/assets/
+!models/tf_model_gen/variables/
+!models/tf_model_gen/variables/variables.data-00000-of-00001
+!models/tf_model_gen/variables/variables.index
 
 # CMake
 CMakeFiles/
