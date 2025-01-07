@@ -52,6 +52,19 @@ endif()
 message(STATUS "Found TensorFlow include dir: ${TF_INCLUDE_DIR}")
 message(STATUS "Found TensorFlow library: ${TF_LIB}")
 
+include(FetchContent)
+
+# Protobuf
+FetchContent_Declare(
+    protobuf
+    GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
+    GIT_TAG v29.2
+)
+set(protobuf_BUILD_TESTS OFF CACHE BOOL "Build tests" FORCE)
+set(protobuf_BUILD_EXAMPLES OFF CACHE BOOL "Build examples" FORCE)
+set(protobuf_WITH_ZLIB OFF CACHE BOOL "Build with zlib support" FORCE)
+FetchContent_MakeAvailable(protobuf)
+
 # SentencePiece setup
 if(BUILD_SENTENCEPIECE)
     include(FetchContent)
@@ -105,6 +118,7 @@ target_include_directories(t5_inference
 set(LIBS_TO_LINK
     ${TF_LIB}
     ${SENTENCEPIECE_LIB}
+    protobuf::libprotobuf
 )
 
 # Add NNStreamer if enabled
