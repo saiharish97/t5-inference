@@ -69,7 +69,7 @@ ls -l "$2"\n\
 \n\
 echo "Running under GDB for backtrace:"\n\
 cd /app/build\n\
-gdb -ex "run" -ex "bt" -ex "quit" --args ./t5_inference "$1" "$2"' > /app/entrypoint.sh && \
+gdb -batch -ex "run" -ex "bt" --args ./t5_inference "$1" "$2"' > /app/entrypoint.sh && \
     chmod +x /app/entrypoint.sh
 
 ENTRYPOINT ["/app/entrypoint.sh"]
