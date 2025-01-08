@@ -1,10 +1,10 @@
-# Use Ubuntu base image
+# Use Ubuntu as base image
 FROM ubuntu:20.04
 
 # Avoid prompts during package installation
 ARG DEBIAN_FRONTEND=noninteractive
 
-# Install specific protobuf version
+# Install dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
@@ -15,17 +15,13 @@ RUN apt-get update && apt-get install -y \
     unzip \
     python3 \
     python3-pip \
+    libprotobuf-dev \
+    protobuf-compiler \
+    libprotoc-dev \
+    sentencepiece \
+    libsentencepiece-dev \
     gdb \
     file \
-    && cd /tmp \
-    && wget https://github.com/protocolbuffers/protobuf/releases/download/v3.19.4/protobuf-all-3.19.4.tar.gz \
-    && tar xf protobuf-all-3.19.4.tar.gz \
-    && cd protobuf-3.19.4 \
-    && ./configure --enable-shared --with-pic \
-    && make -j$(nproc) \
-    && make install \
-    && ldconfig \
-    && rm -rf /tmp/protobuf* \
     && rm -rf /var/lib/apt/lists/*
 
 # Install TensorFlow
@@ -40,20 +36,17 @@ WORKDIR /app
 # Copy your project files
 COPY . .
 
-# Create build directory and build project with debug info
+# Create build directory and build project
 RUN rm -rf build && mkdir -p build && \
     cd build && \
     cmake .. \
         -DCMAKE_BUILD_TYPE=Debug \
-        -DBUILD_SENTENCEPIECE=ON \
-        -DTENSORFLOW_ROOT=/usr/local \
-        -DCMAKE_CXX_FLAGS="-g -O0 -frtti -D_GLIBCXX_USE_CXX11_ABI=0" && \
+        -DBUILD_SENTENCEPIECE=OFF \
+        -DTENSORFLOW_ROOT=/usr/local && \
     make -j$(nproc) VERBOSE=1
 
-# Set environment variable for library path and debugging
+# Set environment variable for library path
 ENV LD_LIBRARY_PATH=/usr/local/lib
-ENV TF_CPP_MIN_LOG_LEVEL=0
-ENV TF_CPP_MIN_VLOG_LEVEL=3
 
 # Create a directory for models
 RUN mkdir -p /app/models

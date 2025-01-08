@@ -7,10 +7,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Generate compile_commands.json for IDE support
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Options
-option(BUILD_SENTENCEPIECE "Build SentencePiece from source" ON)
-option(USE_NNSTREAMER "Enable NNStreamer support" OFF)
-
 # Find TensorFlow
 if(DEFINED ENV{TENSORFLOW_ROOT})
     set(TF_ROOT $ENV{TENSORFLOW_ROOT})
@@ -18,7 +14,7 @@ else()
     if(APPLE)
         set(TF_ROOT "/opt/homebrew/Cellar/libtensorflow/2.18.0")
     else()
-        set(TF_ROOT "/usr/local")
+        set(TF_ROOT "/usr/local/tensorflow")
     endif()
 endif()
 
@@ -52,39 +48,32 @@ endif()
 message(STATUS "Found TensorFlow include dir: ${TF_INCLUDE_DIR}")
 message(STATUS "Found TensorFlow library: ${TF_LIB}")
 
-# SentencePiece setup
-if(BUILD_SENTENCEPIECE)
-    include(FetchContent)
-    FetchContent_Declare(
-        sentencepiece
-        GIT_REPOSITORY https://github.com/google/sentencepiece.git
-        GIT_TAG v0.1.97
+# Find SentencePiece
+if(APPLE)
+    # For brew-installed SentencePiece
+    find_path(SENTENCEPIECE_INCLUDE_DIRS
+        NAMES sentencepiece_processor.h
+        PATHS
+            /opt/homebrew/include
+            /usr/local/include
+        REQUIRED
     )
     
-    # Configure SentencePiece build options
-    set(SPM_ENABLE_SHARED OFF CACHE BOOL "Build shared library" FORCE)
-    set(SPM_ENABLE_SAMPLES OFF CACHE BOOL "Build sample programs" FORCE)
-    set(SPM_ENABLE_TESTS OFF CACHE BOOL "Build test programs" FORCE)
-    
-    FetchContent_MakeAvailable(sentencepiece)
-    FetchContent_GetProperties(sentencepiece)
-    set(SENTENCEPIECE_INCLUDE_DIR ${sentencepiece_SOURCE_DIR}/src)
-    set(SENTENCEPIECE_LIB sentencepiece)
+    find_library(SENTENCEPIECE_LIBRARIES
+        NAMES sentencepiece
+        PATHS
+            /opt/homebrew/lib
+            /usr/local/lib
+        REQUIRED
+    )
 else()
+    # For apt-installed SentencePiece
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(SENTENCEPIECE REQUIRED sentencepiece)
-    set(SENTENCEPIECE_INCLUDE_DIR ${SENTENCEPIECE_INCLUDE_DIRS})
-    set(SENTENCEPIECE_LIB ${SENTENCEPIECE_LIBRARIES})
 endif()
 
-message(STATUS "Found SentencePiece include dir: ${SENTENCEPIECE_INCLUDE_DIR}")
-
-# NNStreamer setup (Linux only)
-if(USE_NNSTREAMER AND NOT APPLE)
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(NNSTREAMER REQUIRED nnstreamer)
-    message(STATUS "Found NNStreamer: ${NNSTREAMER_LIBRARIES}")
-endif()
+message(STATUS "Found SentencePiece include dirs: ${SENTENCEPIECE_INCLUDE_DIRS}")
+message(STATUS "Found SentencePiece libraries: ${SENTENCEPIECE_LIBRARIES}")
 
 # Add executable
 add_executable(t5_inference 
@@ -98,24 +87,15 @@ target_include_directories(t5_inference
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${TF_INCLUDE_DIR}
-        ${SENTENCEPIECE_INCLUDE_DIR}
+        ${SENTENCEPIECE_INCLUDE_DIRS}
 )
 
-# Base libraries
-set(LIBS_TO_LINK
-    ${TF_LIB}
-    ${SENTENCEPIECE_LIB}
+# Link libraries
+target_link_libraries(t5_inference
+    PUBLIC
+        ${TF_LIB}
+        ${SENTENCEPIECE_LIBRARIES}
 )
-
-# Add NNStreamer if enabled
-if(USE_NNSTREAMER AND NOT APPLE)
-    target_include_directories(t5_inference PUBLIC ${NNSTREAMER_INCLUDE_DIRS})
-    list(APPEND LIBS_TO_LINK ${NNSTREAMER_LIBRARIES})
-    target_compile_definitions(t5_inference PRIVATE USE_NNSTREAMER)
-endif()
-
-# Link all libraries
-target_link_libraries(t5_inference PUBLIC ${LIBS_TO_LINK})
 
 # Platform-specific settings
 if(APPLE)
