@@ -52,7 +52,7 @@ ENV TF_CPP_MIN_VLOG_LEVEL=3
 # Create a directory for models
 RUN mkdir -p /app/models
 
-# Create an entrypoint script with debugging
+# Create an entrypoint script
 RUN echo '#!/bin/bash\n\
 if [ "$#" -ne 2 ]; then\n\
     echo "Usage: $0 <tf_model_path> <spiece_model_path>"\n\
@@ -67,9 +67,8 @@ echo "Checking file existence:"\n\
 ls -l "$1"\n\
 ls -l "$2"\n\
 \n\
-echo "Running under GDB for backtrace:"\n\
 cd /app/build\n\
-gdb -batch -ex "run" -ex "bt" --args ./t5_inference "$1" "$2"' > /app/entrypoint.sh && \
+gdb --args ./t5_inference "$1" "$2"' > /app/entrypoint.sh && \
     chmod +x /app/entrypoint.sh
 
 ENTRYPOINT ["/app/entrypoint.sh"]
