@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <iomanip>
+#include <google/protobuf/stubs/common.h>
 
 void printTokens(const char* label, const std::vector<int>& tokens) {
     std::cout << label << " [" << tokens.size() << "]: ";
@@ -21,6 +22,13 @@ int main(int argc, char* argv[]) {
     }
 
     try {
+
+        std::cout << "Protobuf version: " 
+          << GOOGLE_PROTOBUF_VERSION / 1000000 << "."  // Major version
+          << (GOOGLE_PROTOBUF_VERSION / 1000) % 1000 << "."  // Minor version
+          << GOOGLE_PROTOBUF_VERSION % 1000  // Patch version
+          << std::endl;
+
         // Initialize tokenizer and model
         T5Tokenizer tokenizer;
         if (!tokenizer.loadModel(argv[2])) {
