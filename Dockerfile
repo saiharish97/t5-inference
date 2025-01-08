@@ -4,7 +4,7 @@ FROM ubuntu:20.04
 # Avoid prompts during package installation
 ARG DEBIAN_FRONTEND=noninteractive
 
-# Install basic dependencies
+# Install specific protobuf version
 RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
@@ -15,11 +15,17 @@ RUN apt-get update && apt-get install -y \
     unzip \
     python3 \
     python3-pip \
-    libprotobuf-dev \
-    protobuf-compiler \
-    libprotoc-dev \
     gdb \
     file \
+    && cd /tmp \
+    && wget https://github.com/protocolbuffers/protobuf/releases/download/v3.19.4/protobuf-all-3.19.4.tar.gz \
+    && tar xf protobuf-all-3.19.4.tar.gz \
+    && cd protobuf-3.19.4 \
+    && ./configure --enable-shared --with-pic \
+    && make -j$(nproc) \
+    && make install \
+    && ldconfig \
+    && rm -rf /tmp/protobuf* \
     && rm -rf /var/lib/apt/lists/*
 
 # Install TensorFlow
@@ -41,7 +47,7 @@ RUN rm -rf build && mkdir -p build && \
         -DCMAKE_BUILD_TYPE=Debug \
         -DBUILD_SENTENCEPIECE=ON \
         -DTENSORFLOW_ROOT=/usr/local \
-        -DCMAKE_CXX_FLAGS="-g -O0" && \
+        -DCMAKE_CXX_FLAGS="-g -O0 -frtti -D_GLIBCXX_USE_CXX11_ABI=0" && \
     make -j$(nproc) VERBOSE=1
 
 # Set environment variable for library path and debugging
