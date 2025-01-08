@@ -3,64 +3,13 @@ project(t5_inference)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Generate compile_commands.json for IDE support
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Options
 option(BUILD_SENTENCEPIECE "Build SentencePiece from source" ON)
 option(USE_NNSTREAMER "Enable NNStreamer support" OFF)
-option(USE_SYSTEM_PROTOBUF "Use system protobuf instead of building from source" ${APPLE})
-
-# Handle Protobuf
-if(NOT USE_SYSTEM_PROTOBUF)
-    include(ExternalProject)
-    set(PROTOBUF_PREFIX ${CMAKE_BINARY_DIR}/protobuf)
-    set(PROTOBUF_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/protobuf/install)
-    
-    ExternalProject_Add(protobuf_external
-        GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
-        GIT_TAG v3.19.4
-        PREFIX ${PROTOBUF_PREFIX}
-        SOURCE_SUBDIR cmake
-        CMAKE_ARGS
-            -DCMAKE_INSTALL_PREFIX=${PROTOBUF_INSTALL_PREFIX}
-            -DCMAKE_POSITION_INDEPENDENT_CODE=ON
-            -Dprotobuf_BUILD_TESTS=OFF
-            -Dprotobuf_BUILD_EXAMPLES=OFF
-            -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-            -Dprotobuf_BUILD_SHARED_LIBS=OFF
-            -Dprotobuf_WITH_ZLIB=OFF
-        BUILD_BYPRODUCTS
-            ${PROTOBUF_INSTALL_PREFIX}/lib/libprotobuf${CMAKE_SHARED_LIBRARY_SUFFIX}
-            ${PROTOBUF_INSTALL_PREFIX}/lib/libprotobuf${CMAKE_STATIC_LIBRARY_SUFFIX}
-    )
-    
-    # Delay protobuf path setup until after it's built
-    set(Protobuf_INCLUDE_DIRS ${PROTOBUF_INSTALL_PREFIX}/include)
-    
-    # Create imported target for protobuf
-    add_library(protobuf::libprotobuf STATIC IMPORTED)
-    file(MAKE_DIRECTORY ${Protobuf_INCLUDE_DIRS}) # Prevent include directory warnings
-    
-    # Set protobuf imported target properties
-    if(APPLE)
-        set_target_properties(protobuf::libprotobuf PROPERTIES
-            IMPORTED_LOCATION ${PROTOBUF_INSTALL_PREFIX}/lib/libprotobuf${CMAKE_SHARED_LIBRARY_SUFFIX}
-            INTERFACE_INCLUDE_DIRECTORIES ${Protobuf_INCLUDE_DIRS}
-        )
-    else()
-        set_target_properties(protobuf::libprotobuf PROPERTIES
-            IMPORTED_LOCATION ${PROTOBUF_INSTALL_PREFIX}/lib/libprotobuf${CMAKE_STATIC_LIBRARY_SUFFIX}
-            INTERFACE_INCLUDE_DIRECTORIES ${Protobuf_INCLUDE_DIRS}
-        )
-    endif()
-    
-    set(Protobuf_LIBRARIES protobuf::libprotobuf)
-else()
-    find_package(Protobuf REQUIRED)
-endif()
-
-message(STATUS "Using Protobuf include: ${Protobuf_INCLUDE_DIRS}")
-message(STATUS "Using Protobuf libs: ${Protobuf_LIBRARIES}")
 
 # Find TensorFlow
 if(DEFINED ENV{TENSORFLOW_ROOT})
@@ -73,6 +22,7 @@ else()
     endif()
 endif()
 
+# Find TensorFlow headers and library
 find_path(TF_INCLUDE_DIR
     NAMES tensorflow/c/c_api.h
     PATHS
@@ -111,14 +61,10 @@ if(BUILD_SENTENCEPIECE)
         GIT_TAG v0.1.97
     )
     
+    # Configure SentencePiece build options
     set(SPM_ENABLE_SHARED OFF CACHE BOOL "Build shared library" FORCE)
     set(SPM_ENABLE_SAMPLES OFF CACHE BOOL "Build sample programs" FORCE)
     set(SPM_ENABLE_TESTS OFF CACHE BOOL "Build test programs" FORCE)
-    
-    # Point SentencePiece to our local protobuf if we're building it
-    if(NOT USE_SYSTEM_PROTOBUF)
-        set(CMAKE_PREFIX_PATH ${PROTOBUF_INSTALL_PREFIX} ${CMAKE_PREFIX_PATH})
-    endif()
     
     FetchContent_MakeAvailable(sentencepiece)
     FetchContent_GetProperties(sentencepiece)
@@ -147,34 +93,29 @@ add_executable(t5_inference
     src/model.cpp
 )
 
-if(NOT USE_SYSTEM_PROTOBUF)
-    add_dependencies(t5_inference protobuf_external)
-    add_dependencies(protobuf::libprotobuf protobuf_external)
-endif()
-
 # Include directories
 target_include_directories(t5_inference
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${TF_INCLUDE_DIR}
         ${SENTENCEPIECE_INCLUDE_DIR}
-        ${Protobuf_INCLUDE_DIRS}
 )
 
-# Link libraries
-target_link_libraries(t5_inference
-    PUBLIC
-        ${TF_LIB}
-        ${SENTENCEPIECE_LIB}
-        ${Protobuf_LIBRARIES}
+# Base libraries
+set(LIBS_TO_LINK
+    ${TF_LIB}
+    ${SENTENCEPIECE_LIB}
 )
 
 # Add NNStreamer if enabled
 if(USE_NNSTREAMER AND NOT APPLE)
     target_include_directories(t5_inference PUBLIC ${NNSTREAMER_INCLUDE_DIRS})
-    target_link_libraries(t5_inference PUBLIC ${NNSTREAMER_LIBRARIES})
+    list(APPEND LIBS_TO_LINK ${NNSTREAMER_LIBRARIES})
     target_compile_definitions(t5_inference PRIVATE USE_NNSTREAMER)
 endif()
+
+# Link all libraries
+target_link_libraries(t5_inference PUBLIC ${LIBS_TO_LINK})
 
 # Platform-specific settings
 if(APPLE)
