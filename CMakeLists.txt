@@ -18,7 +18,7 @@ if(NOT USE_SYSTEM_PROTOBUF)
     
     ExternalProject_Add(protobuf_external
         GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
-        GIT_TAG v5.29.2
+        GIT_TAG v3.19.4
         PREFIX ${PROTOBUF_PREFIX}
         CMAKE_ARGS
             -DCMAKE_INSTALL_PREFIX=${PROTOBUF_INSTALL_PREFIX}
@@ -31,12 +31,27 @@ if(NOT USE_SYSTEM_PROTOBUF)
             ${PROTOBUF_INSTALL_PREFIX}/lib/libprotobuf${CMAKE_STATIC_LIBRARY_SUFFIX}
     )
     
+    # Delay protobuf path setup until after it's built
     set(Protobuf_INCLUDE_DIRS ${PROTOBUF_INSTALL_PREFIX}/include)
+    
+    # Create imported target for protobuf
+    add_library(protobuf::libprotobuf STATIC IMPORTED)
+    file(MAKE_DIRECTORY ${Protobuf_INCLUDE_DIRS}) # Prevent include directory warnings
+    
+    # Set protobuf imported target properties
     if(APPLE)
-        set(Protobuf_LIBRARIES ${PROTOBUF_INSTALL_PREFIX}/lib/libprotobuf${CMAKE_SHARED_LIBRARY_SUFFIX})
+        set_target_properties(protobuf::libprotobuf PROPERTIES
+            IMPORTED_LOCATION ${PROTOBUF_INSTALL_PREFIX}/lib/libprotobuf${CMAKE_SHARED_LIBRARY_SUFFIX}
+            INTERFACE_INCLUDE_DIRECTORIES ${Protobuf_INCLUDE_DIRS}
+        )
     else()
-        set(Protobuf_LIBRARIES ${PROTOBUF_INSTALL_PREFIX}/lib/libprotobuf${CMAKE_STATIC_LIBRARY_SUFFIX})
+        set_target_properties(protobuf::libprotobuf PROPERTIES
+            IMPORTED_LOCATION ${PROTOBUF_INSTALL_PREFIX}/lib/libprotobuf${CMAKE_STATIC_LIBRARY_SUFFIX}
+            INTERFACE_INCLUDE_DIRECTORIES ${Protobuf_INCLUDE_DIRS}
+        )
     endif()
+    
+    set(Protobuf_LIBRARIES protobuf::libprotobuf)
 else()
     find_package(Protobuf REQUIRED)
 endif()
@@ -131,6 +146,7 @@ add_executable(t5_inference
 
 if(NOT USE_SYSTEM_PROTOBUF)
     add_dependencies(t5_inference protobuf_external)
+    add_dependencies(protobuf::libprotobuf protobuf_external)
 endif()
 
 # Include directories
