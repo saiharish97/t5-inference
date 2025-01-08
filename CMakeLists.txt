@@ -20,12 +20,15 @@ if(NOT USE_SYSTEM_PROTOBUF)
         GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
         GIT_TAG v3.19.4
         PREFIX ${PROTOBUF_PREFIX}
+        SOURCE_SUBDIR cmake
         CMAKE_ARGS
             -DCMAKE_INSTALL_PREFIX=${PROTOBUF_INSTALL_PREFIX}
             -DCMAKE_POSITION_INDEPENDENT_CODE=ON
             -Dprotobuf_BUILD_TESTS=OFF
             -Dprotobuf_BUILD_EXAMPLES=OFF
             -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+            -Dprotobuf_BUILD_SHARED_LIBS=OFF
+            -Dprotobuf_WITH_ZLIB=OFF
         BUILD_BYPRODUCTS
             ${PROTOBUF_INSTALL_PREFIX}/lib/libprotobuf${CMAKE_SHARED_LIBRARY_SUFFIX}
             ${PROTOBUF_INSTALL_PREFIX}/lib/libprotobuf${CMAKE_STATIC_LIBRARY_SUFFIX}
