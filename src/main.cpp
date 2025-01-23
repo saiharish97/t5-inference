@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
                     
                     // Generate summary
                     std::cout << "Generating summary..." << std::endl;
-                    auto output_ids = model.generate(input_ids, 100, 0.8); // Increased max length for summaries
+                    auto output_ids = model.generate(input_ids, 350, 0.8); // Increased max length for summaries
                     printTokens("Output tokens", output_ids);
                     
                     // Decode output
