@@ -22,6 +22,14 @@ assets/
 !models/tf_model_gen/variables/variables.data-00000-of-00001
 !models/tf_model_gen/variables/variables.index
 
+
+!models/tf_model_genftv2/saved_model.pb
+!models/tf_model_genftv2/fingerprint.pb
+!models/tf_model_genftv2/assets/
+!models/tf_model_genftv2/variables/
+!models/tf_model_genftv2/variables/variables.data-00000-of-00001
+!models/tf_model_genftv2/variables/variables.index
+
 # CMake
 CMakeFiles/
 CMakeCache.txt
